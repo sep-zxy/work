@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操作系统实验</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        nav {
+            background-color: #007bff;
+            padding: 10px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 15px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            overflow-x: auto;
+            position: relative;
+        }
+        #loading {
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+            font-size: 18px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html">操作系统实验</a>
+        <a href="page2.html">算法实验</a>
+    </nav>
+
+    <h1>操作系统实验</h1>
+    <label for="experiment-content">实验内容：</label>
+    <textarea id="experiment-content" placeholder="请输入实验内容"></textarea>
+    <label for="experiment-steps">实验步骤：</label>
+    <textarea id="experiment-steps" placeholder="请输入实验步骤"></textarea>
+    <button id="generate-btn">生成</button>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>生成中，请稍候...</p>
+    </div>
+
+    <div class="output" id="output">
+        <h2>生成结果</h2>
+        <pre id="result"></pre>
+    </div>
+
+    <script>
+        document.getElementById('generate-btn').addEventListener('click', async () => {
+            const content = document.getElementById('experiment-content').value.trim();
+            const steps = document.getElementById('experiment-steps').value.trim();
+            if (!content || !steps) {
+                alert('请填写实验内容和实验步骤！');
+                return;
+            }
+
+            const apiUrl = "https://api.x.ai/v1/chat/completions";
+            const apiKey = "xai-KWQxfcn2J4jnkY1b4cVSFuQOOMpOMjHwEVowpCo0bOulxaXevSQoLOHLUp9BioMPdvP8ewvscoL1zkrS";
+
+            const prompt = `
+当我输入实验内容和实验步骤时，自动执行以下过程：
+1.简单说明实验内容（200字左右）
+2.说明实验步骤（完整的多个段落）
+3.给出实验的流程图形如下面的示例
+flowchart TD
+    A[开始程序] --> B[初始化进程队列]
+    B --> C[创建进程]
+    C --> D{有就绪进程?}
+    D -- 是 --> E[选择最高优先级进程]
+    E --> F[执行进程]
+    F --> G[进程终止]
+    G --> D
+    D -- 否 --> H[等待新进程]
+    D -- 所有进程终止 --> I[结束程序]
+    G --> J[移除进程]
+    J --> D
+4.按要求给出c语言源代码（包含中文注释）
+5.对结果进行分析（200字）
+
+实验内容：
+${content}
+
+实验步骤：
+${steps}
+            `;
+
+            const loading = document.getElementById('loading');
+            const output = document.getElementById('output');
+            const resultElement = document.getElementById('result');
+
+            loading.style.display = 'block';
+            output.style.display = 'none';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            {
+                                role: "system",
+                                content: "You are a test assistant.",
+                            },
+                            {
+                                role: "user",
+                                content: prompt,
+                            }
+                        ],
+                        model: "grok-beta",
+                        stream: false,
+                        temperature: 0,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("API调用失败，请检查API密钥和配置");
+                }
+
+                const data = await response.json();
+                const result = data.choices[0]?.message?.content || "未生成内容，请检查输入或API配置";
+
+                resultElement.textContent = result;
+                loading.style.display = 'none';
+                output.style.display = 'block';
+            } catch (error) {
+                loading.style.display = 'none';
+                alert(`生成失败：${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>
